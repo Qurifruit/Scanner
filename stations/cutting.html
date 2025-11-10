@@ -110,6 +110,8 @@
     const status = document.getElementById('status');
     let scanning = false;
     let currentBatch = '';
+    let scanTime = '';
+    let completionTime = '';
 
     async function startCamera() {
       try {
@@ -158,20 +160,20 @@
           ctx.clearRect(0, 0, canvas.width, canvas.height);
     
           if (code) {
-            drawOverlay(ctx, code.location);
-            scanning = false;
-            status.textContent = "✅ Batch scanned: " + code.data;
-            currentBatch = code.data;
-
-            // Load instructions after scan
-            setTimeout(() => {
-              stopCamera();
-              video.style.display = "none";
-              loadInstructions('mango_cutting');
-            }, 1500);
-            return;
+              drawOverlay(ctx, code.location);
+              scanning = false;
+              status.textContent = "✅ Batch scanned: " + code.data;
+              currentBatch = code.data;
+              scanTime = new Date().toLocaleTimeString(); // Capture scan time
+          
+              // Load instructions after scan
+              setTimeout(() => {
+                  stopCamera();
+                  video.style.display = "none";
+                  loadInstructions('mango_cutting');
+              }, 1500);
+              return;
           }
-        }
     
         requestAnimationFrame(tick);
       }
@@ -227,11 +229,14 @@
     }
 
     function completeOperation() {
-      document.getElementById('completedBatchNumber').textContent = currentBatch;
-      document.getElementById('completionTime').textContent = new Date().toLocaleTimeString();
-      
-      document.getElementById('instructionsSection').classList.add('hidden');
-      document.getElementById('completedSection').classList.remove('hidden');
+        completionTime = new Date().toLocaleTimeString(); // Capture completion time
+        
+        document.getElementById('completedBatchNumber').textContent = currentBatch;
+        document.getElementById('completionTime').textContent = completionTime;
+        document.getElementById('scanTime').textContent = scanTime; // Add this line
+        
+        document.getElementById('instructionsSection').classList.add('hidden');
+        document.getElementById('completedSection').classList.remove('hidden');
     }
 
     function showScanner() {
