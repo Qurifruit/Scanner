@@ -1,1 +1,14 @@
-
+{
+  "station": "Washing",
+  "steps": [
+    "Rinse mangoes with clean water",
+    "Use food-grade sanitizer solution",
+    "Final rinse with potable water",
+    "Inspect for remaining debris"
+  ],
+  "quality_checks": [
+    "No visible dirt",
+    "Skin intact",
+    "Proper drainage"
+  ]
+}
