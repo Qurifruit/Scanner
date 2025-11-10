@@ -74,13 +74,11 @@
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
     <div class="header">
       <h1>🔪 Cutting Mango</h1>
       <p>Scan fruit batch QR code</p>
     </div>
 
-    <!-- Scanner Section -->
     <div id="scannerSection">
       <button class="scan-btn" onclick="startCamera()">
         📷 SCAN BATCH QR CODE
@@ -89,21 +87,20 @@
       <p style="text-align: center; padding: 10px;">Point camera at mango batch QR code</p>
     </div>
 
-	<!-- Results Section -->
-	<div id="resultsSection" class="hidden">
-	  <h2 style="text-align: center; color: #4CAF50;">✅ BATCH IDENTIFIED</h2>
-	  <div class="batch-display" id="batchNumber"></div>
-	  
-	  <div class="instructions">
-		<h3>🥭 Mango Cutting Instructions:</h3>
-		<ol>
-		  <li>Wear cut-resistant gloves</li>
-		  <li>Use sterilized stainless steel equipment</li>
-		  <li>Cut into 2cm cubes</li>
-		  <li>Remove pit carefully</li>
-		  <li>Separate pulp from skin</li>
-		</ol>
-	  </div>
+    <div id="resultsSection" class="hidden">
+      <h2 style="text-align: center; color: #4CAF50;">✅ BATCH IDENTIFIED</h2>
+      <div class="batch-display" id="batchNumber"></div>
+      
+      <div class="instructions">
+        <h3>🥭 Mango Cutting Instructions:</h3>
+        <ol>
+          <li>Wear cut-resistant gloves</li>
+          <li>Use sterilized stainless steel equipment</li>
+          <li>Cut into 2cm cubes</li>
+          <li>Remove pit carefully</li>
+          <li>Separate pulp from skin</li>
+        </ol>
+      </div>
 
       <input type="number" id="wasteWeight" placeholder="Enter waste weight (kg)" step="0.1" min="0">
       
@@ -116,7 +113,6 @@
       </button>
     </div>
 
-    <!-- Storage Display -->
     <div id="storageSection" style="padding: 20px; background: #f9f9f9; margin: 10px; border-radius: 8px;">
       <h3>📦 Scanned Batches:</h3>
       <div id="storedBatches"></div>
@@ -127,20 +123,26 @@
     let scanning = false;
     let scannedBatches = JSON.parse(localStorage.getItem('cuttingBatches')) || [];
 
-    // Display stored batches on load
     function displayStoredBatches() {
       const storedBatchesDiv = document.getElementById('storedBatches');
       if (scannedBatches.length === 0) {
         storedBatchesDiv.innerHTML = '<p>No batches scanned yet</p>';
       } else {
         storedBatchesDiv.innerHTML = scannedBatches.map(batch => 
-          `<div style="background: white; padding: 10px; margin: 5px 0; border-radius: 5px;">
-            <strong>${batch.batchNumber}</strong><br>
-            <small>Scanned: ${new Date(batch.timestamp).toLocaleString()}</small>
-          </div>`
+          '<div style="background: white; padding: 10px; margin: 5px 0; border-radius: 5px;">' +
+          '<strong>' + batch.batchNumber + '</strong><br>' +
+          '<small>Scanned: ' + new Date(batch.timestamp).toLocaleString() + '</small>' +
+          '</div>'
         ).join('');
       }
     }
+
+    document.getElementById('wasteWeight').addEventListener('keypress', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this.blur();
+      }
+    });
 
     function startCamera() {
       document.querySelector('#scannerSection button').style.display = 'none';
@@ -156,7 +158,6 @@
         })
         .catch(err => {
           alert("Camera error: " + err.message);
-          // Fallback to manual entry
           const batch = prompt("Enter batch number manually:");
           if (batch) showBatchResult(batch);
         });
@@ -188,25 +189,21 @@
     }
 
     function showBatchResult(batchNumber) {
-      // Stop camera
       const video = document.getElementById('video');
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
       }
 
-      // Store the batch
       scannedBatches.unshift({
         batchNumber: batchNumber,
         timestamp: new Date().toISOString(),
         station: 'cutting'
       });
       
-      // Keep only last 10 batches
       scannedBatches = scannedBatches.slice(0, 10);
       localStorage.setItem('cuttingBatches', JSON.stringify(scannedBatches));
       displayStoredBatches();
 
-      // Show results
       document.getElementById('scannerSection').classList.add('hidden');
       document.getElementById('resultsSection').classList.remove('hidden');
       document.getElementById('batchNumber').textContent = batchNumber;
@@ -221,7 +218,6 @@
         return;
       }
 
-      // Update the batch with completion data
       const batch = scannedBatches.find(b => b.batchNumber === batchNumber);
       if (batch) {
         batch.completed = true;
@@ -230,11 +226,7 @@
         localStorage.setItem('cuttingBatches', JSON.stringify(scannedBatches));
       }
 
-      alert(`✅ Cutting completed!\nBatch: ${batchNumber}\nWaste: ${wasteWeight}kg`);
-      
-      // Here you would add Google Sheets integration
-      // sendToGoogleSheets(batchNumber, wasteWeight);
-      
+      alert('✅ Cutting completed!\nBatch: ' + batchNumber + '\nWaste: ' + wasteWeight + 'kg');
       startOver();
     }
 
@@ -248,7 +240,6 @@
       displayStoredBatches();
     }
 
-    // Initialize
     window.onload = function() {
       displayStoredBatches();
     };
