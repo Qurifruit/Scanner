@@ -82,6 +82,15 @@
 
     async function startCamera() {
       try {
+        // Reset video element
+        video.srcObject = null;
+        video.style.display = "block";
+        video.style.opacity = 1;
+    
+        // Reset canvas
+        canvas.width = 0;
+        canvas.height = 0;
+    
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
         scanning = true;
@@ -144,8 +153,10 @@
     function stopCamera() {
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
       }
     }
+
   </script>
 </body>
 </html>
