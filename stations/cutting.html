@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cutting Station</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        body { margin: 0; background: #f5f5f5; font-family: Arial; }
+        .container { max-width: 400px; margin: 0 auto; background: white; min-height: 100vh; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .scan-btn { background: #4CAF50; color: white; border: none; padding: 20px; font-size: 18px; border-radius: 10px; width: 90%; margin: 20px auto; display: block; }
+        .hidden { display: none; }
+        .instruction-item { padding: 15px; border-bottom: 1px solid #eee; }
+        .back-btn { background: #666; margin-top: 10px; }
+        .batch-info { background: #e8f5e8; padding: 15px; margin: 10px; border-radius: 8px; text-align: center; }
+        .completed-section { background: #4CAF50; color: white; padding: 30px; text-align: center; }
+        .completed-icon { font-size: 48px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔪 Cutting Station</h1>
+            <p>Scan fruit batch QR code</p>
+        </div>
+
+        <div id="scannerSection">
+            <button class="scan-btn" onclick="startCamera()">📷 SCAN BATCH QR CODE</button>
+            <video id="video" class="hidden" autoplay playsinline></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            <button class="scan-btn back-btn" onclick="window.location.href='../index.html'">← BACK TO MAIN</button>
+        </div>
+
+        <div id="instructionsSection" class="hidden">
+            <div class="batch-info">
+                <h3>📦 CURRENT BATCH</h3>
+                <p id="batchNumber" style="font-size: 24px; font-weight: bold; margin: 10px 0;"></p>
+                <p id="fruitType" style="color: #666;"></p>
+            </div>
+            
+            <h2 style="padding: 0 15px;">Instructions:</h2>
+            <div id="instructionsList"></div>
+            <div id="inputFields"></div>
+            <button class="scan-btn" onclick="completeOperation()">✅ MARK COMPLETED</button>
+            <button class="scan-btn back-btn" onclick="showScanner()">SCAN NEW BATCH</button>
+        </div>
+
+        <div id="completedSection" class="hidden">
+            <div class="completed-section">
+                <div class="completed-icon">✅</div>
+                <h2>OPERATION COMPLETED</h2>
+                <p>Batch: <strong id="completedBatchNumber"></strong></p>
+                <p>Station: <strong>Cutting</strong></p>
+                <p>Time: <strong id="completionTime"></strong></p>
+            </div>
+            <button class="scan-btn" onclick="showScanner()">SCAN NEXT BATCH</button>
+            <button class="scan-btn back-btn" onclick="window.location.href='../index.html'">BACK TO MAIN</button>
+        </div>
+    </div>
+
+    <script>
+        let currentBatch = '';
+        let currentFruitType = '';
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                scanQRCode();
+            } catch (err) {
+                alert("Camera access denied. Please allow camera permissions.");
+                // For demo: Simulate QR scan
+                setTimeout(() => simulateQRScan('BATCH-789-MANGO'), 2000);
+            }
+        }
+
+        function scanQRCode() {
+            const context = canvas.getContext('2d');
+            function tick() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        processScannedCode(code.data);
+                        return;
+                    }
+                }
+                requestAnimationFrame(tick);
+            }
+            tick();
+        }
+
+        function processScannedCode(codeData) {
+            // Extract batch number and fruit type from QR code
+            // Format: "BATCH-123-MANGO" or just "mango_cutting"
+            if (codeData.includes('BATCH-')) {
+                currentBatch = codeData;
+                currentFruitType = codeData.split('-')[2].toLowerCase() + '_cutting';
+            } else {
+                currentBatch = 'BATCH-DEMO-' + codeData.toUpperCase();
+                currentFruitType = codeData;
+            }
+            
+            loadInstructions(currentFruitType);
+        }
+
+        function simulateQRScan(batchCode) {
+            processScannedCode(batchCode);
+        }
+
+        async function loadInstructions(fruitType) {
+            try {
+                const response = await fetch(`../instructions/${fruitType}.json`);
+                const data = await response.json();
+                
+                // Display batch info
+                document.getElementById('batchNumber').textContent = currentBatch;
+                document.getElementById('fruitType').textContent = data.station + ' Instructions';
+                
+                // Display instructions
+                document.getElementById('instructionsList').innerHTML = 
+                    data.steps.map((step, index) => 
+                        `<div class="instruction-item">${index + 1}. ${step}</div>`
+                    ).join('');
+                
+                document.getElementById('scannerSection').classList.add('hidden');
+                document.getElementById('instructionsSection').classList.remove('hidden');
+                
+            } catch (error) {
+                alert("Error loading instructions. Using demo data.");
+                showDemoInstructions();
+            }
+        }
+
+        function showDemoInstructions() {
+            document.getElementById('batchNumber').textContent = currentBatch;
+            document.getElementById('fruitType').textContent = 'Cutting Instructions';
+            
+            document.getElementById('instructionsList').innerHTML = `
+                <div class="instruction-item">1. Remove stems and pits</div>
+                <div class="instruction-item">2. Cut into uniform 2cm cubes</div>
+                <div class="instruction-item">3. Separate pulp from skin</div>
+                <div class="instruction-item">4. Collect in food-grade containers</div>
+            `;
+            
+            document.getElementById('scannerSection').classList.add('hidden');
+            document.getElementById('instructionsSection').classList.remove('hidden');
+        }
+
+        function completeOperation() {
+            // Show completion screen
+            document.getElementById('completedBatchNumber').textContent = currentBatch;
+            document.getElementById('completionTime').textContent = new Date().toLocaleTimeString();
+            
+            document.getElementById('instructionsSection').classList.add('hidden');
+            document.getElementById('completedSection').classList.remove('hidden');
+            
+            // Here you would typically send this data to your backend
+            console.log('Completed:', {
+                batch: currentBatch,
+                station: 'cutting',
+                time: new Date().toISOString()
+            });
+        }
+
+        function showScanner() {
+            // Reset and show scanner
+            document.getElementById('scannerSection').classList.remove('hidden');
+            document.getElementById('instructionsSection').classList.add('hidden');
+            document.getElementById('completedSection').classList.add('hidden');
+            
+            currentBatch = '';
+            currentFruitType = '';
+            
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
