@@ -113,6 +113,11 @@
 
     async function startCamera() {
       try {
+        // Change button to show scanning state
+        const scanBtn = document.querySelector('.scan-btn');
+        scanBtn.style.background = '#ff9800'; // Orange
+        scanBtn.textContent = '🔄 Scanning...';
+    
         // Reset video element
         video.srcObject = null;
         video.style.display = "block";
@@ -129,6 +134,10 @@
         scanLoop();
       } catch (err) {
         status.textContent = "Camera access denied.";
+        // Reset button on error
+        const scanBtn = document.querySelector('.scan-btn');
+        scanBtn.style.background = '#4CAF50';
+        scanBtn.textContent = '📷 Start Scanning';
       }
     }
 
@@ -226,6 +235,11 @@
     }
 
     function showScanner() {
+      // Reset button to ready state
+      const scanBtn = document.querySelector('.scan-btn');
+      scanBtn.style.background = '#4CAF50';
+      scanBtn.textContent = '📷 Start Scanning';
+    
       document.getElementById('scannerSection').classList.remove('hidden');
       document.getElementById('instructionsSection').classList.add('hidden');
       document.getElementById('completedSection').classList.add('hidden');
