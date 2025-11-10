@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cutting Station</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        body { margin: 0; background: #f5f5f5; font-family: Arial; }
+        .container { max-width: 400px; margin: 0 auto; background: white; min-height: 100vh; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .scan-btn { background: #4CAF50; color: white; border: none; padding: 20px; font-size: 18px; border-radius: 10px; width: 90%; margin: 20px auto; display: block; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔪 Cutting Station</h1>
+            <p>Scan fruit batch QR code</p>
+        </div>
+
+        <div id="scannerSection">
+            <button class="scan-btn" onclick="startCamera()">📷 SCAN BATCH QR CODE</button>
+            <video id="video" class="hidden" autoplay playsinline></video>
+        </div>
+
+        <div id="instructionsSection" class="hidden">
+            <h2 id="fruitTitle"></h2>
+            <div id="instructionsList"></div>
+            <div id="inputFields"></div>
+            <button class="scan-btn" onclick="completeOperation()">✅ MARK COMPLETED</button>
+        </div>
+    </div>
+
+    <script>
+        // Basic camera and QR scanning (we'll add JSON loading next)
+        let currentBatch = '';
+        
+        function startCamera() {
+            // Your existing camera code here
+            alert("Camera will open here - we'll add the full code next step");
+        }
+
+        function loadInstructions(fruitType) {
+            // This will load the JSON file based on fruit type
+            alert("Will load instructions for: " + fruitType);
+        }
+    </script>
+</body>
+</html>
