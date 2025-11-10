@@ -138,7 +138,7 @@
     }
 
 	function sendToGoogleSheets(batchNumber, wasteWeight) {
-	  const webAppUrl = 'https://script.google.com/macros/s/AKfycbxWUwEeWtWHrZJ-Z8LwHCSbTagrWQ-zG3AwP7t2o5nEJHOXz6uu7P_cJJqARzjOLVZrNA/exec'; // REPLACE THIS WITH YOUR URL
+	  const webAppUrl = 'https://script.google.com/macros/s/AKfycbxWUwEeWtWHrZJ-Z8LwHCSbTagrWQ-zG3AwP7t2o5nEJHOXz6uu7P_cJJqARzjOLVZrNA/exec';
 	  
 	  const data = {
 		batchNumber: batchNumber,
@@ -149,17 +149,15 @@
 	  
 	  fetch(webAppUrl, {
 		method: 'POST',
+		mode: 'no-cors', // Add this line - crucial for Google Apps Script
 		headers: {
 		  'Content-Type': 'application/json',
 		},
 		body: JSON.stringify(data)
 	  })
-	  .then(response => response.json())
-	  .then(result => {
-		console.log('Success:', result);
-		if (!result.success) {
-		  alert('Warning: ' + result.error);
-		}
+	  .then(() => {
+		// With 'no-cors' we can't read the response, but we assume it worked
+		console.log('Data sent to Google Sheets');
 	  })
 	  .catch(error => {
 		console.error('Error:', error);
