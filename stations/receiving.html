@@ -1,1 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fruit Receiving</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      min-height: 100vh;
+    }
+    .header {
+      background: #2196F3;
+      color: white;
+      padding: 20px;
+    }
+    .form-group {
+      margin: 20px 0;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .submit-btn {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 18px;
+      border-radius: 10px;
+      width: 100%;
+      margin: 20px 0;
+    }
+    .back-btn {
+      background: #666;
+    }
+    .batch-preview {
+      background: #e8f5e8;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📥 Fruit Receiving</h1>
+      <p>Register new fruit batches</p>
+    </div>
 
+    <div id="receivingForm">
+      <div class="form-group">
+        <label for="fruitType">Fruit Type:</label>
+        <select id="fruitType" onchange="updateBatchPreview()">
+          <option value="">Select Fruit</option>
+          <option value="BAN">Banana</option>
+          <option value="GOL">Goldenberry</option>
+          <option value="GVA">Guava</option>
+          <option value="MGO">Mango</option>
+          <option value="PAP">Papaya</option>
+          <option value="PIN">Pineapple</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="weight">Received Weight (Kg):</label>
+        <input type="number" id="weight" step="0.1" min="0" placeholder="Enter weight in kg" oninput="updateBatchPreview()">
+      </div>
+
+      <div class="form-group">
+        <label for="supplier">Supplier Name:</label>
+        <input type="text" id="supplier" placeholder="Enter supplier name">
+      </div>
+
+      <div class="form-group">
+        <label for="quality">Quality Rating:</label>
+        <select id="quality">
+          <option value="Excellent">Excellent</option>
+          <option value="Good">Good</option>
+          <option value="Fair">Fair</option>
+          <option value="Poor">Poor</option>
+        </select>
+      </div>
+
+      <div class="batch-preview" id="batchPreview">
+        Batch Code: [Select fruit and weight]
+      </div>
+
+      <button class="submit-btn" onclick="submitReceiving()">✅ REGISTER BATCH</button>
+      <button class="submit-btn back-btn" onclick="window.location.href='index.html'">← BACK TO MAIN</button>
+    </div>
+
+    <div id="successSection" style="display: none;">
+      <div style="background: #4CAF50; color: white; padding: 30px; border-radius: 10px; margin: 20px 0;">
+        <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+        <h2>BATCH REGISTERED</h2>
+        <p>Batch: <strong id="registeredBatch"></strong></p>
+        <p>Fruit: <strong id="registeredFruit"></strong></p>
+        <p>Weight: <strong id="registeredWeight"></strong> kg</p>
+        <p>Time: <strong id="registeredTime"></strong></p>
+      </div>
+      <button class="submit-btn" onclick="newBatch()">REGISTER NEW BATCH</button>
+      <button class="submit-btn back-btn" onclick="window.location.href='index.html'">BACK TO MAIN</button>
+    </div>
+  </div>
+
+  <script>
+    let batchCounter = 1;
+
+    function updateBatchPreview() {
+      const fruitCode = document.getElementById('fruitType').value;
+      const weight = document.getElementById('weight').value;
+      
+      if (fruitCode && weight) {
+        const today = new Date();
+        const dateStr = today.getFullYear().toString().slice(2) + 
+                       (today.getMonth() + 1).toString().padStart(2, '0') + 
+                       today.getDate().toString().padStart(2, '0');
+        
+        const batchCode = `${fruitCode}-${dateStr}-B${batchCounter.toString().padStart(2, '0')}`;
+        document.getElementById('batchPreview').textContent = `Batch Code: ${batchCode}`;
+      } else {
+        document.getElementById('batchPreview').textContent = 'Batch Code: [Select fruit and weight]';
+      }
+    }
+
+    function submitReceiving() {
+      const fruitCode = document.getElementById('fruitType').value;
+      const weight = document.getElementById('weight').value;
+      const supplier = document.getElementById('supplier').value;
+      const quality = document.getElementById('quality').value;
+      
+      if (!fruitCode || !weight) {
+        alert('Please select fruit type and enter weight');
+        return;
+      }
+
+      // Generate final batch code
+      const today = new Date();
+      const dateStr = today.getFullYear().toString().slice(2) + 
+                     (today.getMonth() + 1).toString().padStart(2, '0') + 
+                     today.getDate().toString().padStart(2, '0');
+      
+      const batchCode = `${fruitCode}-${dateStr}-B${batchCounter.toString().padStart(2, '0')}`;
+      
+      // Show success screen
+      document.getElementById('registeredBatch').textContent = batchCode;
+      document.getElementById('registeredFruit').textContent = getFruitName(fruitCode);
+      document.getElementById('registeredWeight').textContent = weight;
+      document.getElementById('registeredTime').textContent = today.toLocaleTimeString();
+      
+      document.getElementById('receivingForm').style.display = 'none';
+      document.getElementById('successSection').style.display = 'block';
+      
+      // Here we'll add Google Sheets submission later
+      console.log('Batch registered:', { batchCode, fruitCode, weight, supplier, quality });
+      
+      batchCounter++;
+    }
+
+    function getFruitName(code) {
+      const fruits = {
+        'BAN': 'Banana', 'GOL': 'Goldenberry', 'GVA': 'Guava',
+        'MGO': 'Mango', 'PAP': 'Papaya', 'PIN': 'Pineapple'
+      };
+      return fruits[code] || code;
+    }
+
+    function newBatch() {
+      // Reset form
+      document.getElementById('fruitType').value = '';
+      document.getElementById('weight').value = '';
+      document.getElementById('supplier').value = '';
+      document.getElementById('quality').value = 'Excellent';
+      document.getElementById('batchPreview').textContent = 'Batch Code: [Select fruit and weight]';
+      
+      document.getElementById('receivingForm').style.display = 'block';
+      document.getElementById('successSection').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
