@@ -1,1 +1,151 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cutting Station</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      min-height: 100vh;
+    }
+    .header {
+      background: #4CAF50;
+      color: white;
+      padding: 20px;
+    }
+    .scan-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 18px;
+      border-radius: 10px;
+      width: 90%;
+      margin: 20px auto;
+      display: block;
+    }
+    #videoWrapper {
+      position: relative;
+      display: inline-block;
+    }
+    video, canvas {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+    }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 20px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔪 Cutting Station</h1>
+      <p>Scan fruit batch QR code</p>
+    </div>
+
+    <button class="scan-btn" onclick="startCamera()">📷 Start Scanning</button>
+
+    <div id="videoWrapper">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div id="status">Status: Waiting to scan...</div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const status = document.getElementById('status');
+    let scanning = false;
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream;
+        scanning = true;
+        status.textContent = "Status: Scanning...";
+        scanLoop();
+      } catch (err) {
+        status.textContent = "Camera access denied.";
+      }
+    }
+
+        function scanLoop() {
+      const ctx = canvas.getContext('2d');
+    
+      function tick() {
+        if (!scanning) return;
+    
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, canvas.width, canvas.height);
+    
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+          if (code) {
+            drawOverlay(ctx, code.location);
+            scanning = false;
+            status.textContent = "✅ Batch scanned: " + code.data;
+    
+            // Delay camera stop for visual confirmation
+            setTimeout(() => {
+              stopCamera();
+              video.style.opacity = 0.3; // fade effect
+            }, 1500); // 1.5 seconds
+            return;
+          }
+        }
+    
+        requestAnimationFrame(tick);
+      }
+    
+      tick();
+    }
+
+    function drawOverlay(ctx, location) {
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(location.topLeftCorner.x, location.topLeftCorner.y);
+      ctx.lineTo(location.topRightCorner.x, location.topRightCorner.y);
+      ctx.lineTo(location.bottomRightCorner.x, location.bottomRightCorner.y);
+      ctx.lineTo(location.bottomLeftCorner.x, location.bottomLeftCorner.y);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    function stopCamera() {
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      }
+    }
+  </script>
+</body>
+</html>
+
