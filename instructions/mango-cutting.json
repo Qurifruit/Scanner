@@ -1,0 +1,14 @@
+{
+    "fruit": "Mango",
+    "station": "Cutting", 
+    "instructions": [
+        "Wear cut-resistant gloves",
+        "Use sterilized stainless steel equipment",
+        "Cut into 2cm cubes", 
+        "Remove pit carefully",
+        "Separate pulp from skin"
+    ],
+    "inputs": [
+        {"type": "number", "label": "Waste Weight", "unit": "kg", "required": true}
+    ]
+}
