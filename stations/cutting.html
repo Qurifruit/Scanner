@@ -40,16 +40,26 @@
         let currentBatch = '';
         let video = document.getElementById('video');
         let canvas = document.getElementById('canvas');
+        let scanning = true;
         
         async function startCamera() {
             try {
+                scanning = true;
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 video.srcObject = stream;
                 video.classList.remove('hidden');
+                canvas.classList.remove('hidden'); // FIX 1: Show canvas
                 scanQRCode();
+
+                // FIX 3: Fallback if no QR detected
+                setTimeout(() => {
+                    if (scanning) {
+                        console.warn("No QR detected. Using demo data.");
+                        simulateQRScan('mango_cutting');
+                    }
+                }, 8000);
             } catch (err) {
                 alert("Camera access denied. Please allow camera permissions.");
-                // For demo: Simulate QR scan
                 setTimeout(() => simulateQRScan('mango_cutting'), 2000);
             }
         }
@@ -64,7 +74,16 @@
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
                     
+                    // FIX 2: Add logging
+                    console.log("Scanning frame...");
                     if (code) {
+                        console.log("QR code detected:", code.data);
+                        scanning = false;
+                        if (video.srcObject) {
+                            video.srcObject.getTracks().forEach(track => track.stop());
+                            video.classList.add('hidden');
+                            canvas.classList.add('hidden');
+                        }
                         loadInstructions(code.data);
                         return;
                     }
@@ -75,6 +94,7 @@
         }
 
         function simulateQRScan(fruitType) {
+            scanning = false;
             loadInstructions(fruitType);
         }
 
@@ -92,7 +112,6 @@
                 
             } catch (error) {
                 alert("Error loading instructions. Using demo data.");
-                // Fallback demo data
                 showDemoInstructions();
             }
         }
@@ -110,6 +129,7 @@
         }
 
         function showScanner() {
+            scanning = false;
             document.getElementById('scannerSection').classList.remove('hidden');
             document.getElementById('instructionsSection').classList.add('hidden');
             if (video.srcObject) {
