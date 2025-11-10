@@ -2,35 +2,147 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>QR Batch Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cutting Mango Station</title>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
+    body { 
+      margin: 0; 
+      background: #f5f5f5; 
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+    }
+    .header {
+      background: #4CAF50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .scan-btn { 
+      background: #4CAF50; 
+      color: white; 
+      border: none; 
+      padding: 20px; 
+      font-size: 18px; 
+      border-radius: 10px; 
+      width: 90%; 
+      margin: 20px auto;
+      display: block;
+      cursor: pointer;
+    }
+    video {
+      width: 90%;
+      margin: 10px auto;
+      display: block;
+      border-radius: 10px;
+      background: #000;
+    }
     .hidden {
       display: none;
     }
-    video {
-      width: 100%;
-      max-width: 400px;
-      border: 1px solid #ccc;
+    .instructions {
+      background: #e8f5e8;
+      padding: 20px;
+      margin: 10px;
+      border-radius: 10px;
+      text-align: left;
+    }
+    input {
+      width: 90%;
+      padding: 15px;
+      margin: 10px auto;
+      display: block;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .batch-display {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+      padding: 15px;
+      background: #f0f8f0;
+      margin: 15px;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <div id="scannerSection">
-    <button onclick="startCamera()">Start Scan</button>
-    <video id="video" class="hidden" autoplay></video>
-  </div>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🔪 Cutting Mango</h1>
+      <p>Scan fruit batch QR code</p>
+    </div>
 
-  <div id="resultsSection" class="hidden">
-    <p>Batch: <span id="batchNumber"></span></p>
-    <button onclick="startOver()">Scan Another</button>
+    <!-- Scanner Section -->
+    <div id="scannerSection">
+      <button class="scan-btn" onclick="startCamera()">
+        📷 SCAN BATCH QR CODE
+      </button>
+      <video id="video" class="hidden" autoplay playsinline></video>
+      <p style="text-align: center; padding: 10px;">Point camera at mango batch QR code</p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="hidden">
+      <div class="batch-display" id="batchNumber"></div>
+      
+      <div class="instructions">
+        <h3>🥭 Mango Cutting Instructions:</h3>
+        <ol>
+          <li>Wear cut-resistant gloves</li>
+          <li>Use sterilized stainless steel equipment</li>
+          <li>Cut into 2cm cubes</li>
+          <li>Remove pit carefully</li>
+          <li>Separate pulp from skin</li>
+        </ol>
+      </div>
+
+      <input type="number" id="wasteWeight" placeholder="Enter waste weight (kg)" step="0.1" min="0">
+      
+      <button class="scan-btn" onclick="completeOperation()">
+        ✅ MARK CUTTING COMPLETED
+      </button>
+      
+      <button class="scan-btn" onclick="startOver()" style="background: #666;">
+        🔄 SCAN DIFFERENT BATCH
+      </button>
+    </div>
+
+    <!-- Storage Display -->
+    <div id="storageSection" style="padding: 20px; background: #f9f9f9; margin: 10px; border-radius: 8px;">
+      <h3>📦 Scanned Batches:</h3>
+      <div id="storedBatches"></div>
+    </div>
   </div>
 
   <script>
     let scanning = false;
+    let scannedBatches = JSON.parse(localStorage.getItem('cuttingBatches')) || [];
+
+    // Display stored batches on load
+    function displayStoredBatches() {
+      const storedBatchesDiv = document.getElementById('storedBatches');
+      if (scannedBatches.length === 0) {
+        storedBatchesDiv.innerHTML = '<p>No batches scanned yet</p>';
+      } else {
+        storedBatchesDiv.innerHTML = scannedBatches.map(batch => 
+          `<div style="background: white; padding: 10px; margin: 5px 0; border-radius: 5px;">
+            <strong>${batch.batchNumber}</strong><br>
+            <small>Scanned: ${new Date(batch.timestamp).toLocaleString()}</small>
+          </div>`
+        ).join('');
+      }
+    }
 
     function startCamera() {
-      document.querySelector('button').style.display = 'none';
+      document.querySelector('#scannerSection button').style.display = 'none';
       const video = document.getElementById('video');
       video.classList.remove('hidden');
 
@@ -43,6 +155,9 @@
         })
         .catch(err => {
           alert("Camera error: " + err.message);
+          // Fallback to manual entry
+          const batch = prompt("Enter batch number manually:");
+          if (batch) showBatchResult(batch);
         });
     }
 
@@ -72,23 +187,70 @@
     }
 
     function showBatchResult(batchNumber) {
+      // Stop camera
       const video = document.getElementById('video');
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
       }
 
+      // Store the batch
+      scannedBatches.unshift({
+        batchNumber: batchNumber,
+        timestamp: new Date().toISOString(),
+        station: 'cutting'
+      });
+      
+      // Keep only last 10 batches
+      scannedBatches = scannedBatches.slice(0, 10);
+      localStorage.setItem('cuttingBatches', JSON.stringify(scannedBatches));
+      displayStoredBatches();
+
+      // Show results
       document.getElementById('scannerSection').classList.add('hidden');
       document.getElementById('resultsSection').classList.remove('hidden');
       document.getElementById('batchNumber').textContent = batchNumber;
+    }
+
+    function completeOperation() {
+      const wasteWeight = document.getElementById('wasteWeight').value;
+      const batchNumber = document.getElementById('batchNumber').textContent;
+
+      if (!wasteWeight) {
+        alert("Please enter waste weight");
+        return;
+      }
+
+      // Update the batch with completion data
+      const batch = scannedBatches.find(b => b.batchNumber === batchNumber);
+      if (batch) {
+        batch.completed = true;
+        batch.wasteWeight = wasteWeight;
+        batch.completionTime = new Date().toISOString();
+        localStorage.setItem('cuttingBatches', JSON.stringify(scannedBatches));
+      }
+
+      alert(`✅ Cutting completed!\nBatch: ${batchNumber}\nWaste: ${wasteWeight}kg`);
+      
+      // Here you would add Google Sheets integration
+      // sendToGoogleSheets(batchNumber, wasteWeight);
+      
+      startOver();
     }
 
     function startOver() {
       scanning = false;
       document.getElementById('scannerSection').classList.remove('hidden');
       document.getElementById('resultsSection').classList.add('hidden');
-      document.querySelector('button').style.display = 'block';
+      document.querySelector('#scannerSection button').style.display = 'block';
       document.getElementById('video').classList.add('hidden');
+      document.getElementById('wasteWeight').value = '';
+      displayStoredBatches();
     }
+
+    // Initialize
+    window.onload = function() {
+      displayStoredBatches();
+    };
   </script>
 </body>
 </html>
