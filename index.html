@@ -4,46 +4,66 @@
   <meta charset="UTF-8">
   <title>QR Scanner</title>
   <style>
-    body { margin: 0; background: #000; color: #fff; font-family: sans-serif; text-align: center; }
-    video { width: 100%; height: auto; }
+    body { margin: 0; background: #000; color: #0f0; font-family: sans-serif; text-align: center; }
+    video, canvas { width: 100%; height: auto; }
     #output { margin-top: 20px; font-size: 1.5em; }
   </style>
 </head>
 <body>
   <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" style="display:none;"></canvas>
   <div id="output">Scanning...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script>
     const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
     const output = document.getElementById('output');
+    const ctx = canvas.getContext('2d');
+    let scanning = true;
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
         video.srcObject = stream;
-        video.setAttribute("playsinline", true); // required for iOS
+        video.setAttribute("playsinline", true);
         video.play();
-        requestAnimationFrame(tick);
+        requestAnimationFrame(scanFrame);
       })
       .catch(err => {
         output.textContent = "Camera access denied.";
         console.error(err);
       });
 
-    function tick() {
+    function scanFrame() {
+      if (!scanning) return;
+
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
         if (code) {
-          output.textContent = `Batch: ${code.data}`;
+          scanning = false;
+          output.textContent = `✅ Batch: ${code.data}`;
+
+          // Freeze frame by hiding video and showing canvas
+          video.style.display = "none";
+          canvas.style.display = "block";
+
+          // Stop camera stream
+          const tracks = video.srcObject.getTracks();
+          tracks.forEach(track => track.stop());
+
+          // Optional: send to backend
+          // fetch('/log', {
+          //   method: 'POST',
+          //   headers: { 'Content-Type': 'application/json' },
+          //   body: JSON.stringify({ batch: code.data })
+          // });
         }
       }
-      requestAnimationFrame(tick);
+      if (scanning) requestAnimationFrame(scanFrame);
     }
   </script>
 </body>
