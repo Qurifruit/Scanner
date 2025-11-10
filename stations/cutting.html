@@ -59,7 +59,6 @@
 
     <script>
         let currentBatch = '';
-        let currentFruitType = '';
         let video = document.getElementById('video');
         let canvas = document.getElementById('canvas');
         
@@ -70,9 +69,8 @@
                 video.classList.remove('hidden');
                 scanQRCode();
             } catch (err) {
-                alert("Camera access denied. Please allow camera permissions.");
-                // For demo: Simulate QR scan
-                setTimeout(() => simulateQRScan('BATCH-789-MANGO'), 2000);
+                // Camera failed - use demo mode
+                simulateQRScan('mango_cutting');
             }
         }
 
@@ -87,7 +85,8 @@
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
                     
                     if (code) {
-                        processScannedCode(code.data);
+                        currentBatch = code.data;
+                        loadInstructions(code.data);
                         return;
                     }
                 }
@@ -96,87 +95,38 @@
             tick();
         }
 
-        function processScannedCode(codeData) {
-            // Extract batch number and fruit type from QR code
-            // Format: "BATCH-123-MANGO" or just "mango_cutting"
-            if (codeData.includes('BATCH-')) {
-                currentBatch = codeData;
-                currentFruitType = codeData.split('-')[2].toLowerCase() + '_cutting';
-            } else {
-                currentBatch = 'BATCH-DEMO-' + codeData.toUpperCase();
-                currentFruitType = codeData;
-            }
-            
-            loadInstructions(currentFruitType);
-        }
-
-        function simulateQRScan(batchCode) {
-            processScannedCode(batchCode);
+        function simulateQRScan(fruitType) {
+            currentBatch = 'BATCH-789-MANGO';
+            loadInstructions(fruitType);
         }
 
         async function loadInstructions(fruitType) {
-            try {
-                const response = await fetch(`../instructions/${fruitType}.json`);
-                const data = await response.json();
-                
-                // Display batch info
-                document.getElementById('batchNumber').textContent = currentBatch;
-                document.getElementById('fruitType').textContent = data.station + ' Instructions';
-                
-                // Display instructions
-                document.getElementById('instructionsList').innerHTML = 
-                    data.steps.map((step, index) => 
-                        `<div class="instruction-item">${index + 1}. ${step}</div>`
-                    ).join('');
-                
-                document.getElementById('scannerSection').classList.add('hidden');
-                document.getElementById('instructionsSection').classList.remove('hidden');
-                
-            } catch (error) {
-                alert("Error loading instructions. Using demo data.");
-                showDemoInstructions();
-            }
-        }
-
-        function showDemoInstructions() {
-            document.getElementById('batchNumber').textContent = currentBatch;
-            document.getElementById('fruitType').textContent = 'Cutting Instructions';
+            const response = await fetch(`../instructions/${fruitType}.json`);
+            const data = await response.json();
             
-            document.getElementById('instructionsList').innerHTML = `
-                <div class="instruction-item">1. Remove stems and pits</div>
-                <div class="instruction-item">2. Cut into uniform 2cm cubes</div>
-                <div class="instruction-item">3. Separate pulp from skin</div>
-                <div class="instruction-item">4. Collect in food-grade containers</div>
-            `;
+            document.getElementById('batchNumber').textContent = currentBatch;
+            document.getElementById('fruitType').textContent = data.station + ' Instructions';
+            document.getElementById('instructionsList').innerHTML = 
+                data.steps.map((step, index) => 
+                    `<div class="instruction-item">${index + 1}. ${step}</div>`
+                ).join('');
             
             document.getElementById('scannerSection').classList.add('hidden');
             document.getElementById('instructionsSection').classList.remove('hidden');
         }
 
         function completeOperation() {
-            // Show completion screen
             document.getElementById('completedBatchNumber').textContent = currentBatch;
             document.getElementById('completionTime').textContent = new Date().toLocaleTimeString();
             
             document.getElementById('instructionsSection').classList.add('hidden');
             document.getElementById('completedSection').classList.remove('hidden');
-            
-            // Here you would typically send this data to your backend
-            console.log('Completed:', {
-                batch: currentBatch,
-                station: 'cutting',
-                time: new Date().toISOString()
-            });
         }
 
         function showScanner() {
-            // Reset and show scanner
             document.getElementById('scannerSection').classList.remove('hidden');
             document.getElementById('instructionsSection').classList.add('hidden');
             document.getElementById('completedSection').classList.add('hidden');
-            
-            currentBatch = '';
-            currentFruitType = '';
             
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
