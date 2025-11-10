@@ -14,6 +14,7 @@
         .batch-info { background: #e8f5e8; padding: 15px; margin: 10px; border-radius: 8px; text-align: center; }
         .completed-section { background: #4CAF50; color: white; padding: 30px; text-align: center; }
         .completed-icon { font-size: 48px; margin-bottom: 15px; }
+        #video { width: 100%; height: 300px; }
     </style>
 </head>
 <body>
@@ -24,7 +25,7 @@
         </div>
 
         <div id="scannerSection">
-            <button class="scan-btn" onclick="startCamera()">📷 SCAN BATCH QR CODE</button>
+            <button id="scanButton" class="scan-btn" onclick="startCamera()">📷 SCAN BATCH QR CODE</button>
             <video id="video" class="hidden" autoplay playsinline></video>
             <canvas id="canvas" class="hidden"></canvas>
             <button class="scan-btn back-btn" onclick="window.location.href='../index.html'">← BACK TO MAIN</button>
@@ -39,7 +40,6 @@
             
             <h2 style="padding: 0 15px;">Instructions:</h2>
             <div id="instructionsList"></div>
-            <div id="inputFields"></div>
             <button class="scan-btn" onclick="completeOperation()">✅ MARK COMPLETED</button>
             <button class="scan-btn back-btn" onclick="showScanner()">SCAN NEW BATCH</button>
         </div>
@@ -61,15 +61,20 @@
         let currentBatch = '';
         let video = document.getElementById('video');
         let canvas = document.getElementById('canvas');
+        let scanButton = document.getElementById('scanButton');
         
         async function startCamera() {
             try {
+                // Hide the scan button and show video
+                scanButton.classList.add('hidden');
+                video.classList.remove('hidden');
+                
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 video.srcObject = stream;
-                video.classList.remove('hidden');
                 scanQRCode();
             } catch (err) {
                 // Camera failed - use demo mode
+                alert("Camera access needed for scanning. Using demo mode.");
                 simulateQRScan('mango_cutting');
             }
         }
@@ -86,7 +91,7 @@
                     
                     if (code) {
                         currentBatch = code.data;
-                        loadInstructions(code.data);
+                        loadInstructions('mango_cutting');
                         return;
                     }
                 }
@@ -101,6 +106,11 @@
         }
 
         async function loadInstructions(fruitType) {
+            // Stop camera
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
             const response = await fetch(`../instructions/${fruitType}.json`);
             const data = await response.json();
             
@@ -124,14 +134,22 @@
         }
 
         function showScanner() {
+            // Reset everything
             document.getElementById('scannerSection').classList.remove('hidden');
             document.getElementById('instructionsSection').classList.add('hidden');
             document.getElementById('completedSection').classList.add('hidden');
             
+            // Show scan button, hide video
+            scanButton.classList.remove('hidden');
+            video.classList.add('hidden');
+            
+            // Stop camera if running
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
-                video.classList.add('hidden');
+                video.srcObject = null;
             }
+            
+            currentBatch = '';
         }
     </script>
 </body>
