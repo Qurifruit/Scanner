@@ -86,6 +86,16 @@
       
       <h2>Instructions:</h2>
       <div id="instructionsList"></div>
+
+      <!-- Add wasted weight input -->
+    <div style="margin: 20px 0;">
+        <label for="wastedWeight" style="display: block; margin-bottom: 8px; font-weight: bold;">
+            🗑️ Wasted Weight (kg):
+        </label>
+        <input type="number" id="wastedWeight" step="0.1" min="0" 
+               style="width: 90%; padding: 10px; font-size: 16px; border: 2px solid #4CAF50; border-radius: 5px;"
+               placeholder="Enter weight in kg">
+    </div>
       <button class="scan-btn" onclick="completeOperation()">✅ MARK COMPLETED</button>
       <button class="scan-btn" onclick="showScanner()" style="background: #666;">SCAN NEW BATCH</button>
     </div>
@@ -95,13 +105,13 @@
         <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
         <h2>OPERATION COMPLETED</h2>
         <p>Batch: <strong id="completedBatchNumber"></strong></p>
-        <p>Scanned at: <strong id="scanTime"></strong></p> <!-- Add this line -->
+        <p>Scanned at: <strong id="scanTime"></strong></p>
         <p>Completed at: <strong id="completionTime"></strong></p>
+        <p>Wasted: <strong id="completedWastedWeight"></strong> kg</p>
         <p>Station: <strong>Cutting</strong></p>
     </div>
     <button class="scan-btn" onclick="showScanner()">SCAN NEXT BATCH</button>
     <button class="scan-btn" onclick="window.location.href='../index.html'" style="background: #666;">BACK TO MAIN</button>
-  </div>  
   </div>
 
   <script>
@@ -112,6 +122,7 @@
     let currentBatch = '';
     let scanTime = '';
     let completionTime = '';
+    let wastedWeight = 0;
 
     async function startCamera() {
       try {
@@ -230,18 +241,29 @@
     }
 
     function completeOperation() {
+        wastedWeight = document.getElementById('wastedWeight').value || 0;
         completionTime = new Date().toLocaleTimeString(); // Capture completion time
         
         document.getElementById('completedBatchNumber').textContent = currentBatch;
         document.getElementById('completionTime').textContent = completionTime;
         document.getElementById('scanTime').textContent = scanTime; // Add this line
+        document.getElementById('completedWastedWeight').textContent = wastedWeight;
         
         document.getElementById('instructionsSection').classList.add('hidden');
         document.getElementById('completedSection').classList.remove('hidden');
-    }
+
+        // Send to Google Sheets
+        sendToGoogleSheets();
+        
+        document.getElementById('instructionsSection').classList.add('hidden');
+        document.getElementById('completedSection').classList.remove('hidden');
+        }
 
     function showScanner() {
       // Reset button to ready state
+      // Reset wasted weight input
+      document.getElementById('wastedWeight').value = '';
+      wastedWeight = 0;
       const scanBtn = document.querySelector('.scan-btn');
       scanBtn.style.background = '#4CAF50';
       scanBtn.textContent = '📷 Start Scanning';
