@@ -94,6 +94,10 @@
       </div>
 
       <div class="form-group">
+        <label for="operator">Operator Name:</label>
+        <input type="text" id="operator" placeholder="Enter your name">
+    </div>
+      <div class="form-group">
         <label for="quality">Quality Rating:</label>
         <select id="quality">
           <option value="Excellent">Excellent</option>
@@ -150,9 +154,10 @@
       const weight = document.getElementById('weight').value;
       const supplier = document.getElementById('supplier').value;
       const quality = document.getElementById('quality').value;
+      const operator = document.getElementById('operator').value; 
       
-      if (!fruitCode || !weight) {
-        alert('Please select fruit type and enter weight');
+      if (!fruitCode || !weight || !operator) { // Update validation
+        alert('Please select fruit type, enter weight, and operator name');
         return;
       }
 
@@ -192,6 +197,7 @@
       document.getElementById('fruitType').value = '';
       document.getElementById('weight').value = '';
       document.getElementById('supplier').value = '';
+      document.getElementById('operator').value = ''; // Add this line
       document.getElementById('quality').value = 'Excellent';
       document.getElementById('batchPreview').textContent = 'Batch Code: [Select fruit and weight]';
       
