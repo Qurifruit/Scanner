@@ -5,20 +5,43 @@
   <title>QR Batch Scanner</title>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
     .hidden {
       display: none;
     }
-    video {
+    #scannerSection, #resultsSection {
+      margin-top: 20px;
+    }
+    video, canvas {
       width: 100%;
       max-width: 400px;
       border: 1px solid #ccc;
     }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+    #videoWrapper {
+      position: relative;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
+  <h1>QR Batch Scanner</h1>
+
   <div id="scannerSection">
     <button onclick="startCamera()">Start Scan</button>
-    <video id="video" class="hidden" autoplay></video>
+    <div id="videoWrapper" class="hidden">
+      <video id="video" autoplay></video>
+      <canvas id="overlay"></canvas>
+    </div>
   </div>
 
   <div id="resultsSection" class="hidden">
@@ -31,9 +54,9 @@
 
     function startCamera() {
       document.querySelector('button').style.display = 'none';
-      const video = document.getElementById('video');
-      video.classList.remove('hidden');
+      document.getElementById('videoWrapper').classList.remove('hidden');
 
+      const video = document.getElementById('video');
       navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
         .then(stream => {
           video.srcObject = stream;
@@ -50,7 +73,7 @@
       if (!scanning) return;
 
       const video = document.getElementById('video');
-      const canvas = document.createElement('canvas');
+      const canvas = document.getElementById('overlay');
       const ctx = canvas.getContext('2d');
 
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -61,7 +84,10 @@
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
 
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
         if (code) {
+          drawOverlay(ctx, code.location);
           scanning = false;
           showBatchResult(code.data);
           return;
@@ -71,11 +97,30 @@
       requestAnimationFrame(scanForQRCode);
     }
 
+    function drawOverlay(ctx, location) {
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(location.topLeftCorner.x, location.topLeftCorner.y);
+      ctx.lineTo(location.topRightCorner.x, location.topRightCorner.y);
+      ctx.lineTo(location.bottomRightCorner.x, location.bottomRightCorner.y);
+      ctx.lineTo(location.bottomLeftCorner.x, location.bottomLeftCorner.y);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
     function showBatchResult(batchNumber) {
       const video = document.getElementById('video');
+      const canvas = document.getElementById('overlay');
+
+      video.pause();
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
       }
+
+      navigator.clipboard.writeText(batchNumber).catch(err => {
+        console.warn("Clipboard copy failed:", err);
+      });
 
       document.getElementById('scannerSection').classList.add('hidden');
       document.getElementById('resultsSection').classList.remove('hidden');
@@ -87,7 +132,7 @@
       document.getElementById('scannerSection').classList.remove('hidden');
       document.getElementById('resultsSection').classList.add('hidden');
       document.querySelector('button').style.display = 'block';
-      document.getElementById('video').classList.add('hidden');
+      document.getElementById('videoWrapper').classList.add('hidden');
     }
   </script>
 </body>
