@@ -25,20 +25,80 @@
       width: 100%;
       margin: 20px 0;
     }
+    video {
+      width: 100%;
+      border-radius: 10px;
+      margin: 10px 0;
+    }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🔪 Cutting Mango</h1>
-    <p>Ready to scan fruit batches</p>
     
-    <button onclick="alert('Scanner would open here')">
-      📷 SCAN BATCH QR CODE
-    </button>
-    
-    <div style="background: white; color: black; padding: 20px; border-radius: 10px; margin: 20px 0;">
-      <h3>Instructions will appear here after scan</h3>
+    <!-- Scanner Section -->
+    <div id="scannerSection">
+      <p>Ready to scan fruit batches</p>
+      <button onclick="startCamera()">
+        📷 SCAN BATCH QR CODE
+      </button>
+      <video id="video" class="hidden" autoplay playsinline></video>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="hidden">
+      <h2>✅ Batch Found!</h2>
+      <p id="batchNumber" style="font-size: 24px; background: white; color: #4CAF50; padding: 10px; border-radius: 5px;"></p>
+      <button onclick="startOver()">SCAN ANOTHER BATCH</button>
     </div>
   </div>
+
+  <script>
+    function startCamera() {
+      // Hide button, show camera
+      document.querySelector('button').style.display = 'none';
+      document.getElementById('video').classList.remove('hidden');
+      
+      // Start camera
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          const video = document.getElementById('video');
+          video.srcObject = stream;
+          video.play();
+          
+          // Simulate QR scan for now (we'll add real scanning next)
+          setTimeout(() => {
+            showBatchResult("MAN-241115-B01");
+          }, 2000);
+        })
+        .catch(err => {
+          alert("Camera error: " + err.message);
+        });
+    }
+
+    function showBatchResult(batchNumber) {
+      // Stop camera
+      const video = document.getElementById('video');
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      }
+      
+      // Show results
+      document.getElementById('scannerSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.remove('hidden');
+      document.getElementById('batchNumber').textContent = batchNumber;
+    }
+
+    function startOver() {
+      // Reset everything
+      document.getElementById('scannerSection').classList.remove('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.querySelector('button').style.display = 'block';
+      document.getElementById('video').classList.add('hidden');
+    }
+  </script>
 </body>
 </html>
