@@ -90,18 +90,18 @@
       <button class="scan-btn" onclick="showScanner()" style="background: #666;">SCAN NEW BATCH</button>
     </div>
 
-    <!-- Completed Section -->
     <div id="completedSection" class="hidden">
-      <div class="completed-section">
+    <div class="completed-section">
         <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
         <h2>OPERATION COMPLETED</h2>
         <p>Batch: <strong id="completedBatchNumber"></strong></p>
+        <p>Scanned at: <strong id="scanTime"></strong></p> <!-- Add this line -->
+        <p>Completed at: <strong id="completionTime"></strong></p>
         <p>Station: <strong>Cutting</strong></p>
-        <p>Time: <strong id="completionTime"></strong></p>
-      </div>
-      <button class="scan-btn" onclick="showScanner()">SCAN NEXT BATCH</button>
-      <button class="scan-btn" onclick="window.location.href='../index.html'" style="background: #666;">BACK TO MAIN</button>
     </div>
+    <button class="scan-btn" onclick="showScanner()">SCAN NEXT BATCH</button>
+    <button class="scan-btn" onclick="window.location.href='../index.html'" style="background: #666;">BACK TO MAIN</button>
+  </div>  
   </div>
 
   <script>
@@ -160,20 +160,21 @@
           ctx.clearRect(0, 0, canvas.width, canvas.height);
     
           if (code) {
-              drawOverlay(ctx, code.location);
-              scanning = false;
-              status.textContent = "✅ Batch scanned: " + code.data;
-              currentBatch = code.data;
-              scanTime = new Date().toLocaleTimeString(); // Capture scan time
-          
-              // Load instructions after scan
-              setTimeout(() => {
-                  stopCamera();
-                  video.style.display = "none";
-                  loadInstructions('mango_cutting');
-              }, 1500);
-              return;
+            drawOverlay(ctx, code.location);
+            scanning = false;
+            status.textContent = "✅ Batch scanned: " + code.data;
+            currentBatch = code.data;
+            scanTime = new Date().toLocaleTimeString(); // Capture scan time
+    
+            // Load instructions after scan
+            setTimeout(() => {
+              stopCamera();
+              video.style.display = "none";
+              loadInstructions('mango_cutting');
+            }, 1500);
+            return;
           }
+        } // ← THIS BRACE WAS MISSING
     
         requestAnimationFrame(tick);
       }
