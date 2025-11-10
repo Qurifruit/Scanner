@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cutting Station</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      min-height: 100vh;
+    }
+    .header {
+      background: #4CAF50;
+      color: white;
+      padding: 20px;
+    }
+    .scan-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 18px;
+      border-radius: 10px;
+      width: 90%;
+      margin: 20px auto;
+      display: block;
+    }
+    #videoWrapper {
+      position: relative;
+      display: inline-block;
+    }
+    video, canvas {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+    }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 20px;
+      color: #333;
+    }
+    .hidden { display: none; }
+    .instruction-item { padding: 15px; border-bottom: 1px solid #eee; text-align: left; }
+    .batch-info { background: #e8f5e8; padding: 15px; margin: 10px; border-radius: 8px; }
+    .completed-section { background: #4CAF50; color: white; padding: 30px; margin: 20px 0; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔪 Cutting Station</h1>
+      <p>Scan fruit batch QR code</p>
+    </div>
+
+    <!-- Scanner Section -->
+    <div id="scannerSection">
+      <button class="scan-btn" onclick="startCamera()">📷 Start Scanning</button>
+      <div id="videoWrapper">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div id="status">Status: Waiting to scan...</div>
+    </div>
+
+    <!-- Instructions Section -->
+    <div id="instructionsSection" class="hidden">
+      <div class="batch-info">
+        <h3>📦 CURRENT BATCH</h3>
+        <p id="batchNumber" style="font-size: 24px; font-weight: bold; margin: 10px 0;"></p>
+      </div>
+      
+      <h2>Instructions:</h2>
+      <div id="instructionsList"></div>
+      <button class="scan-btn" onclick="completeOperation()">✅ MARK COMPLETED</button>
+      <button class="scan-btn" onclick="showScanner()" style="background: #666;">SCAN NEW BATCH</button>
+    </div>
+
+    <div id="completedSection" class="hidden">
+    <div class="completed-section">
+        <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+        <h2>OPERATION COMPLETED</h2>
+        <p>Batch: <strong id="completedBatchNumber"></strong></p>
+        <p>Scanned at: <strong id="scanTime"></strong></p> <!-- Add this line -->
+        <p>Completed at: <strong id="completionTime"></strong></p>
+        <p>Station: <strong>Cutting</strong></p>
+    </div>
+    <button class="scan-btn" onclick="showScanner()">SCAN NEXT BATCH</button>
+    <button class="scan-btn" onclick="window.location.href='../index.html'" style="background: #666;">BACK TO MAIN</button>
+  </div>  
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const status = document.getElementById('status');
+    let scanning = false;
+    let currentBatch = '';
+    let scanTime = '';
+    let completionTime = '';
+
+    async function startCamera() {
+      try {
+        // Change button to show scanning state
+        const scanBtn = document.querySelector('.scan-btn');
+        scanBtn.style.background = '#ff9800'; // Orange
+        scanBtn.textContent = '🔄 Scanning...';
+    
+        // Reset video element
+        video.srcObject = null;
+        video.style.display = "block";
+        video.style.opacity = 1;
+    
+        // Reset canvas
+        canvas.width = 0;
+        canvas.height = 0;
+    
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream;
+        scanning = true;
+        status.textContent = "Status: Scanning...";
+        scanLoop();
+      } catch (err) {
+        status.textContent = "Camera access denied.";
+        // Reset button on error
+        const scanBtn = document.querySelector('.scan-btn');
+        scanBtn.style.background = '#4CAF50';
+        scanBtn.textContent = '📷 Start Scanning';
+      }
+    }
+
+    function scanLoop() {
+      const ctx = canvas.getContext('2d');
+    
+      function tick() {
+        if (!scanning) return;
+    
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, canvas.width, canvas.height);
+    
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+          if (code) {
+            drawOverlay(ctx, code.location);
+            scanning = false;
+            status.textContent = "✅ Batch scanned: " + code.data;
+            currentBatch = code.data;
+            scanTime = new Date().toLocaleTimeString(); // Capture scan time
+    
+            // Load instructions after scan
+            setTimeout(() => {
+              stopCamera();
+              video.style.display = "none";
+              loadInstructions('mango_cutting');
+            }, 1500);
+            return;
+          }
+        } // ← THIS BRACE WAS MISSING
+    
+        requestAnimationFrame(tick);
+      }
+    
+      tick();
+    }
+
+    function drawOverlay(ctx, location) {
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(location.topLeftCorner.x, location.topLeftCorner.y);
+      ctx.lineTo(location.topRightCorner.x, location.topRightCorner.y);
+      ctx.lineTo(location.bottomRightCorner.x, location.bottomRightCorner.y);
+      ctx.lineTo(location.bottomLeftCorner.x, location.bottomLeftCorner.y);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    function stopCamera() {
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+      }
+    }
+
+    async function loadInstructions(fruitType) {
+      try {
+        const response = await fetch(`../instructions/${fruitType}.json`);
+        const data = await response.json();
+        
+        document.getElementById('batchNumber').textContent = currentBatch;
+        document.getElementById('instructionsList').innerHTML = 
+          data.steps.map((step, index) => 
+            `<div class="instruction-item">${index + 1}. ${step}</div>`
+          ).join('');
+        
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('instructionsSection').classList.remove('hidden');
+        
+      } catch (error) {
+        // Fallback demo instructions
+        document.getElementById('batchNumber').textContent = currentBatch;
+        document.getElementById('instructionsList').innerHTML = `
+          <div class="instruction-item">1. Remove stems and pits</div>
+          <div class="instruction-item">2. Cut into uniform 2cm cubes</div>
+          <div class="instruction-item">3. Separate pulp from skin</div>
+          <div class="instruction-item">4. Collect in food-grade containers</div>
+        `;
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('instructionsSection').classList.remove('hidden');
+      }
+    }
+
+    function completeOperation() {
+        completionTime = new Date().toLocaleTimeString(); // Capture completion time
+        
+        document.getElementById('completedBatchNumber').textContent = currentBatch;
+        document.getElementById('completionTime').textContent = completionTime;
+        document.getElementById('scanTime').textContent = scanTime; // Add this line
+        
+        document.getElementById('instructionsSection').classList.add('hidden');
+        document.getElementById('completedSection').classList.remove('hidden');
+    }
+
+    function showScanner() {
+      // Reset button to ready state
+      const scanBtn = document.querySelector('.scan-btn');
+      scanBtn.style.background = '#4CAF50';
+      scanBtn.textContent = '📷 Start Scanning';
+    
+      document.getElementById('scannerSection').classList.remove('hidden');
+      document.getElementById('instructionsSection').classList.add('hidden');
+      document.getElementById('completedSection').classList.add('hidden');
+      
+      currentBatch = '';
+      status.textContent = "Status: Waiting to scan...";
+    }
+  </script>
+</body>
+</html>
