@@ -1,50 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Batch Code Scanner</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <meta charset="UTF-8">
+  <title>QR Scanner</title>
   <style>
-    body { font-family: Arial; background: #f0f0f0; padding: 20px; }
-    video { width: 100%; border: 2px solid #ccc; border-radius: 10px; }
-    .result { margin-top: 20px; font-size: 20px; color: green; }
-    button { padding: 15px; font-size: 18px; width: 100%; margin-top: 10px; }
+    body { margin: 0; background: #000; color: #fff; font-family: sans-serif; text-align: center; }
+    video { width: 100%; height: auto; }
+    #output { margin-top: 20px; font-size: 1.5em; }
   </style>
 </head>
 <body>
-  <h2>📦 Scan Batch Code</h2>
   <video id="video" autoplay playsinline></video>
-  <div class="result" id="result"></div>
+  <div id="output">Scanning...</div>
 
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script>
     const video = document.getElementById('video');
-    const result = document.getElementById('result');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('output');
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
         video.srcObject = stream;
-        requestAnimationFrame(scan);
+        video.setAttribute("playsinline", true); // required for iOS
+        video.play();
+        requestAnimationFrame(tick);
       })
       .catch(err => {
-        result.textContent = "Camera error: " + err.message;
+        output.textContent = "Camera access denied.";
+        console.error(err);
       });
 
-    function scan() {
+    function tick() {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
         if (code) {
-          result.textContent = "✓ Batch: " + code.data;
-          video.srcObject.getTracks().forEach(track => track.stop());
-          return;
+          output.textContent = `Batch: ${code.data}`;
         }
       }
-      requestAnimationFrame(scan);
+      requestAnimationFrame(tick);
     }
   </script>
 </body>
