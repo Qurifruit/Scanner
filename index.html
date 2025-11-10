@@ -137,6 +137,36 @@
       }
     }
 
+	function sendToGoogleSheets(batchNumber, wasteWeight) {
+	  const webAppUrl = 'https://script.google.com/macros/s/AKfycbxWUwEeWtWHrZJ-Z8LwHCSbTagrWQ-zG3AwP7t2o5nEJHOXz6uu7P_cJJqARzjOLVZrNA/exec'; // REPLACE THIS WITH YOUR URL
+	  
+	  const data = {
+		batchNumber: batchNumber,
+		wasteWeight: wasteWeight,
+		station: 'cutting',
+		timestamp: new Date().toISOString()
+	  };
+	  
+	  fetch(webAppUrl, {
+		method: 'POST',
+		headers: {
+		  'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(data)
+	  })
+	  .then(response => response.json())
+	  .then(result => {
+		console.log('Success:', result);
+		if (!result.success) {
+		  alert('Warning: ' + result.error);
+		}
+	  })
+	  .catch(error => {
+		console.error('Error:', error);
+		alert('Offline: Data saved locally');
+	  });
+	}
+	
     document.getElementById('wasteWeight').addEventListener('keypress', function(event) {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -210,25 +240,28 @@
     }
 
     function completeOperation() {
-      const wasteWeight = document.getElementById('wasteWeight').value;
-      const batchNumber = document.getElementById('batchNumber').textContent;
+	  const wasteWeight = document.getElementById('wasteWeight').value;
+	  const batchNumber = document.getElementById('batchNumber').textContent;
 
-      if (!wasteWeight) {
-        alert("Please enter waste weight");
-        return;
-      }
+	  if (!wasteWeight) {
+		alert("Please enter waste weight");
+		return;
+	  }
 
-      const batch = scannedBatches.find(b => b.batchNumber === batchNumber);
-      if (batch) {
-        batch.completed = true;
-        batch.wasteWeight = wasteWeight;
-        batch.completionTime = new Date().toISOString();
-        localStorage.setItem('cuttingBatches', JSON.stringify(scannedBatches));
-      }
+	  const batch = scannedBatches.find(b => b.batchNumber === batchNumber);
+	  if (batch) {
+		batch.completed = true;
+		batch.wasteWeight = wasteWeight;
+		batch.completionTime = new Date().toISOString();
+		localStorage.setItem('cuttingBatches', JSON.stringify(scannedBatches));
+	  }
 
-      alert('✅ Cutting completed!\nBatch: ' + batchNumber + '\nWaste: ' + wasteWeight + 'kg');
-      startOver();
-    }
+	  // Send to Google Sheets
+	  sendToGoogleSheets(batchNumber, wasteWeight);
+	  
+	  alert('✅ Cutting completed!\nBatch: ' + batchNumber + '\nWaste: ' + wasteWeight + 'kg');
+	  startOver();
+	}
 
     function startOver() {
       scanning = false;
