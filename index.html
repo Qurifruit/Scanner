@@ -1,94 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Cutting Mango Station</title>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <title>QR Batch Scanner</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
-    body { 
-      margin: 0; 
-      background: #4CAF50; 
-      color: white; 
-      font-family: Arial; 
-      text-align: center;
-    }
-    .container {
-      max-width: 400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    button {
-      background: white;
-      color: #4CAF50;
-      border: none;
-      padding: 20px;
-      font-size: 20px;
-      border-radius: 10px;
-      width: 100%;
-      margin: 20px 0;
-    }
     .hidden {
       display: none;
+    }
+    video {
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🔪 Cutting Mango</h1>
-    
-    <div id="scannerSection">
-      <p>Ready to scan fruit batches</p>
-      <button onclick="simulateScan()">
-        📷 SIMULATE QR SCAN
-      </button>
-    </div>
+  <div id="scannerSection">
+    <button onclick="startCamera()">Start Scan</button>
+    <video id="video" class="hidden" autoplay></video>
+  </div>
 
-    <div id="resultsSection" class="hidden">
-      <h2>✅ Batch Found!</h2>
-      <p id="batchNumber" style="font-size: 24px; background: white; color: #4CAF50; padding: 10px; border-radius: 5px;">MAN-241115-B01</p>
-      
-      <div style="background: white; color: black; padding: 15px; border-radius: 10px; margin: 20px 0; text-align: left;">
-        <h3>🥭 Mango Cutting Instructions:</h3>
-        <ol>
-          <li>Wear cut-resistant gloves</li>
-          <li>Use sterilized equipment</li>
-          <li>Cut into 2cm cubes</li>
-        </ol>
-        
-        <label>Waste Weight (kg):</label>
-        <input type="number" id="wasteWeight" style="width: 100%; padding: 10px; margin: 10px 0;">
-      </div>
-      
-      <button onclick="completeOperation()">✅ MARK COMPLETED</button>
-      <button onclick="startOver()" style="background: #666;">🔄 SCAN AGAIN</button>
-    </div>
+  <div id="resultsSection" class="hidden">
+    <p>Batch: <span id="batchNumber"></span></p>
+    <button onclick="startOver()">Scan Another</button>
   </div>
 
   <script>
-    function simulateScan() {
-      // Simulate scanning a batch
-      document.getElementById('scannerSection').classList.add('hidden');
-      document.getElementById('resultsSection').classList.remove('hidden');
+    let scanning = false;
+
+    function startCamera() {
+      document.querySelector('button').style.display = 'none';
+      const video = document.getElementById('video');
+      video.classList.remove('hidden');
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          video.srcObject = stream;
+          video.play();
+          scanning = true;
+          scanForQRCode();
+        })
+        .catch(err => {
+          alert("Camera error: " + err.message);
+        });
     }
 
-    function completeOperation() {
-      const wasteWeight = document.getElementById('wasteWeight').value;
-      const batchNumber = document.getElementById('batchNumber').textContent;
-      
-      if (!wasteWeight) {
-        alert("Please enter waste weight");
-        return;
+    function scanForQRCode() {
+      if (!scanning) return;
+
+      const video = document.getElementById('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+        if (code) {
+          scanning = false;
+          showBatchResult(code.data);
+          return;
+        }
       }
-      
-      alert(`✅ Cutting completed!\nBatch: ${batchNumber}\nWaste: ${wasteWeight}kg`);
-      // Here we would send to Google Sheets later
+
+      requestAnimationFrame(scanForQRCode);
+    }
+
+    function showBatchResult(batchNumber) {
+      const video = document.getElementById('video');
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      }
+
+      document.getElementById('scannerSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.remove('hidden');
+      document.getElementById('batchNumber').textContent = batchNumber;
     }
 
     function startOver() {
+      scanning = false;
       document.getElementById('scannerSection').classList.remove('hidden');
       document.getElementById('resultsSection').classList.add('hidden');
-      document.getElementById('wasteWeight').value = '';
+      document.querySelector('button').style.display = 'block';
+      document.getElementById('video').classList.add('hidden');
     }
   </script>
 </body>
