@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Code Scanner</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    body { font-family: Arial; background: #f0f0f0; padding: 20px; }
+    video { width: 100%; border: 2px solid #ccc; border-radius: 10px; }
+    .result { margin-top: 20px; font-size: 20px; color: green; }
+    button { padding: 15px; font-size: 18px; width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>📦 Scan Batch Code</h2>
+  <video id="video" autoplay playsinline></video>
+  <div class="result" id="result"></div>
+
+  <script>
+    const video = document.getElementById('video');
+    const result = document.getElementById('result');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        video.srcObject = stream;
+        requestAnimationFrame(scan);
+      })
+      .catch(err => {
+        result.textContent = "Camera error: " + err.message;
+      });
+
+    function scan() {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+          result.textContent = "✓ Batch: " + code.data;
+          video.srcObject.getTracks().forEach(track => track.stop());
+          return;
+        }
+      }
+      requestAnimationFrame(scan);
+    }
+  </script>
+</body>
+</html>
