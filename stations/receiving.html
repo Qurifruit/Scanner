@@ -149,41 +149,71 @@
       }
     }
 
-    function submitReceiving() {
+    async function submitToGoogleSheets(data) {
+      const scriptURL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+      
+      try {
+        const response = await fetch(scriptURL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        return result.success;
+      } catch (error) {
+        console.error('Error sending to Google Sheets:', error);
+        return false;
+      }
+    }
+    
+    async function submitReceiving() {
       const fruitCode = document.getElementById('fruitType').value;
       const weight = document.getElementById('weight').value;
       const supplier = document.getElementById('supplier').value;
       const quality = document.getElementById('quality').value;
-      const operator = document.getElementById('operator').value; 
+      const operator = document.getElementById('operator').value;
       
-      if (!fruitCode || !weight || !operator) { // Update validation
+      if (!fruitCode || !weight || !operator) {
         alert('Please select fruit type, enter weight, and operator name');
         return;
       }
-
-      // Generate final batch code
+    
       const today = new Date();
       const dateStr = today.getFullYear().toString().slice(2) + 
                      (today.getMonth() + 1).toString().padStart(2, '0') + 
                      today.getDate().toString().padStart(2, '0');
       
       const batchCode = `${fruitCode}-${dateStr}-B${batchCounter.toString().padStart(2, '0')}`;
+      const fruitName = getFruitName(fruitCode);
+    
+      // Send to Google Sheets
+      const success = await submitToGoogleSheets({
+        batchCode: batchCode,
+        fruitName: fruitName,
+        weight: weight,
+        supplier: supplier,
+        quality: quality,
+        operator: operator
+      });
       
-      // Show success screen
-      document.getElementById('registeredBatch').textContent = batchCode;
-      document.getElementById('registeredFruit').textContent = getFruitName(fruitCode);
-      document.getElementById('registeredWeight').textContent = weight;
-      document.getElementById('registeredTime').textContent = today.toLocaleTimeString();
-      
-      document.getElementById('receivingForm').style.display = 'none';
-      document.getElementById('successSection').style.display = 'block';
-      
-      // Here we'll add Google Sheets submission later
-      console.log('Batch registered:', { batchCode, fruitCode, weight, supplier, quality });
-      
-      batchCounter++;
+      if (success) {
+        // Show success screen
+        document.getElementById('registeredBatch').textContent = batchCode;
+        document.getElementById('registeredFruit').textContent = fruitName;
+        document.getElementById('registeredWeight').textContent = weight;
+        document.getElementById('registeredTime').textContent = today.toLocaleTimeString();
+        
+        document.getElementById('receivingForm').style.display = 'none';
+        document.getElementById('successSection').style.display = 'block';
+        
+        batchCounter++;
+      } else {
+        alert('Error saving to database. Please try again.');
+      }
     }
-
+    
     function getFruitName(code) {
       const fruits = {
         'BAN': 'Banana', 'GOL': 'Goldenberry', 'GVA': 'Guava',
