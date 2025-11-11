@@ -15,7 +15,7 @@ document.getElementById('logForm').addEventListener('submit', function(e) {
   const payload = {};
   formData.forEach((value, key) => payload[key] = value);
 
-  fetch("https://script.google.com/macros/s/AKfycbzjblixtx1fYfa5iXw1PraqIjsnmmx4CcRA52yyFJybINqz3f_7kibDob8EqVp700EN/exec", {
+  fetch("https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbxA1KKtQn6nMTpSSEa9Pt-VvhcA2RvT-xtNg2RcniLJF4DjQVlSK4irWl0lDGl1mqfE/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
